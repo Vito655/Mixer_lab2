@@ -19,18 +19,16 @@ interface Reading {
 export default function DashboardTempPage() {
   const [readings, setReadings] = useState<Reading[]>([]);
   const [loading, setLoading] = useState(true);
-  
-  // Якщо зміна оточення не задана, використовуємо прямий URL бекенду
+
   const apiUrl = process.env.NEXT_PUBLIC_API_URL || "https://magic-lab1.onrender.com";
 
   useEffect(() => {
     async function fetchData() {
       try {
-        // Виправлено роут з /temperature-sensors на /sensors
         const res = await fetch(`${apiUrl}/sensors`);
         if (!res.ok) throw new Error("Error fetching data");
         const data = await res.json();
-        
+
         const formatted = data
           .map((item: any) => ({
             rawTime: new Date(item.timestamp).getTime(),
@@ -41,7 +39,6 @@ export default function DashboardTempPage() {
             }),
             value: Number(item.value),
           }))
-          // Сортуємо від найстаріших записів до найновіших для правильного відображення осі X
           .sort((a: Reading, b: Reading) => a.rawTime - b.rawTime);
 
         setReadings(formatted);
@@ -57,36 +54,46 @@ export default function DashboardTempPage() {
     return () => clearInterval(interval);
   }, [apiUrl]);
 
-  if (loading) return <p className="p-4 text-center">Завантаження даних...</p>;
-
-  if (readings.length === 0) {
-    return (
-      <div className="p-4 text-center">
-        <p className="text-gray-500">Немає доступних даних для температури.</p>
-        <p className="text-sm text-gray-400">Відправте кілька POST-запитів через Postman.</p>
-      </div>
-    );
-  }
-
   return (
-    <div className="w-full h-96 p-4">
-      <h2 className="text-xl font-semibold mb-4 text-center">Графік температури</h2>
-      <ResponsiveContainer width="100%" height="100%">
-        <LineChart data={readings}>
-          <CartesianGrid strokeDasharray="3 3" />
-          <XAxis dataKey="time" />
-          <YAxis domain={['dataMin - 2', 'dataMax + 2']} />
-          <Tooltip />
-          <Line 
-            type="monotone" 
-            dataKey="value" 
-            stroke="#ef4444" 
-            strokeWidth={2}
-            dot={{ r: 4 }}
-            activeDot={{ r: 6 }}
-          />
-        </LineChart>
-      </ResponsiveContainer>
+    <div className="p-8 max-w-6xl mx-auto space-y-6">
+      <h1 className="text-2xl font-bold text-slate-100 flex items-center gap-2">
+        Графік сенсора температури 🌡️
+      </h1>
+
+      <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
+        <h2 className="text-slate-800 text-lg font-medium mb-4">
+          Sensor Temperature-01 (°C)
+        </h2>
+
+        {loading ? (
+          <div className="h-80 flex items-center justify-center text-slate-400">
+            Завантаження даних...
+          </div>
+        ) : readings.length === 0 ? (
+          <div className="h-80 flex items-center justify-center text-slate-400">
+            Немає доступних даних
+          </div>
+        ) : (
+          <div className="w-full h-80">
+            <ResponsiveContainer width="100%" height="100%">
+              <LineChart data={readings}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
+                <XAxis dataKey="time" stroke="#64748b" />
+                <YAxis domain={["dataMin - 2", "dataMax + 2"]} stroke="#64748b" />
+                <Tooltip />
+                <Line
+                  type="monotone"
+                  dataKey="value"
+                  stroke="#ef4444"
+                  strokeWidth={2}
+                  dot={{ r: 4 }}
+                  activeDot={{ r: 6 }}
+                />
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
+        )}
+      </div>
     </div>
   );
 }

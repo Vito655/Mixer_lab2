@@ -28,7 +28,7 @@ export default function DashboardTemp() {
     async function fetchData() {
       try {
         // Запит до NestJS API на роут /sensors
-        const res = await fetch(`${apiUrl}/sensors`);
+        const res = await fetch(`${apiUrl}/temperature-sensors`);
         if (!res.ok) throw new Error("Помилка завантаження даних");
         const data = await res.json();
 
@@ -64,7 +64,7 @@ export default function DashboardTemp() {
   return (
     <div className="p-6">
       <h1 className="text-2xl font-semibold mb-6 text-gray-100 flex items-center gap-2">
-        Графік температурного сенсора 🌡️
+        Графік температурного сенсора
       </h1>
 
       <div className="bg-white p-6 rounded-2xl shadow-md border border-gray-100 text-gray-800">

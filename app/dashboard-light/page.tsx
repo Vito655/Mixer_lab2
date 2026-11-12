@@ -17,9 +17,19 @@ interface Reading {
   rawTime: number;
 }
 
+interface LightAlert {
+  message: string;
+  light?: number;
+  value?: number;
+  sensorName: string;
+  timestamp: string;
+  severity: "critical" | "warning";
+}
+
 export default function DashboardLight() {
   const [readings, setReadings] = useState<Reading[]>([]);
   const [loading, setLoading] = useState(true);
+  const [alerts, setAlerts] = useState<LightAlert[]>([]);
 
   const apiUrl = process.env.NEXT_PUBLIC_API_URL || "https://magic-lab1.onrender.com";
 
@@ -56,6 +66,28 @@ export default function DashboardLight() {
     return () => clearInterval(interval);
   }, [apiUrl]);
 
+  // Підключення до потоку сповіщень для сенсора світла (SSE)
+  useEffect(() => {
+    if (!apiUrl) return;
+
+    const eventSource = new EventSource(`${apiUrl}/light/alerts`);
+
+    eventSource.onmessage = (event) => {
+      const alert: LightAlert = JSON.parse(event.data);
+      // Зберігаємо останні 5 сповіщень, нові додаємо на початок
+      setAlerts((prev) => [alert, ...prev].slice(0, 5));
+    };
+
+    eventSource.onerror = (error) => {
+      console.error("SSE Light Error:", error);
+      eventSource.close();
+    };
+
+    return () => {
+      eventSource.close();
+    };
+  }, [apiUrl]);
+
   if (loading) return <p className="p-6 text-gray-300">Завантаження даних...</p>;
 
   return (
@@ -63,6 +95,25 @@ export default function DashboardLight() {
       <h1 className="text-2xl font-semibold mb-6 text-gray-100 flex items-center gap-2">
         Графік сенсора освітленості 💡
       </h1>
+
+      {/* Блок вікон попереджень */}
+      {alerts.length > 0 && (
+        <div className="space-y-2 mb-6">
+          {alerts.map((alert, index) => (
+            <div
+              key={index}
+              className="bg-amber-100 border-l-4 border-amber-500 text-amber-800 p-4 rounded shadow-md"
+              role="alert"
+            >
+              <p className="font-bold">⚠ {alert.message}</p>
+              <p className="text-sm">
+                Давач: {alert.sensorName} | Час:{" "}
+                {new Date(alert.timestamp).toLocaleTimeString("uk-UA")}
+              </p>
+            </div>
+          ))}
+        </div>
+      )}
 
       <div className="bg-white p-6 rounded-2xl shadow-md border border-gray-100 text-gray-800">
         <h2 className="text-lg font-medium mb-4">Sensor Light-01 (Lx)</h2>
